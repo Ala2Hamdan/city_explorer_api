@@ -10,14 +10,16 @@ const superagent = require('superagent');
 const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
 const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
 const PARKS_API_KEY = process.env.PARKS_API_KEY;
-
+let lat='';
+let lon='';
 app.use(cors());
 app.get('/location',handleLocation);
 app.get('/weather',handleWeather);
 app.get('/parks',handlePark);
-      
-let lat='';
-let lon='';
+app.listen(PORT,()=>{
+    console.log(`this app is listening to the port ${PORT}`);
+});
+
 
 function handleLocation(req,res){
 const  locationCity = req.query.city;
@@ -28,12 +30,13 @@ superagent.get(url).then(dataResponse =>{
     lat = data.lat;
    lon = data.lon;  
     res.send(new Location(locationCity,data.display_name , data.lat ,data.lon));
+    console.log(data);
 });
 
 }
 
 function handleWeather(req,res){
-    const url = `https://api.weatherbit.io/v2.0/forecast/daily?key=${WEATHER_API_KEY}&lat=47.6038321&lon=-122.3300624`
+    const url = `https://api.weatherbit.io/v2.0/forecast/daily?key=${WEATHER_API_KEY}&lat=${lat}&lon=${lon}`
     superagent.get(url).then(response =>{
         const result =response.body;
        res.send( result.data.map(element =>{
@@ -74,9 +77,7 @@ function handlePark(req,res){
     }
 
 
-function handleError(request,respone){
-    response.status(404).send('can not exist');
-}
+
 
 function Location (search_query,formatted_query,latitude,longitude){
     this.search_query=search_query;
@@ -99,10 +100,3 @@ function Parks (name,address ,fee,description,url){
     this.url=url
 
 }
-
-
-
-app.listen(PORT,()=>{
-    console.log(`this app is listening to the port ${PORT}`);
-
-});
