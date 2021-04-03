@@ -18,9 +18,7 @@ app.use(cors());
 app.get('/location',handleLocation);
 app.get('/weather',handleWeather);
 app.get('/parks',handlePark);
-// app.listen(PORT,()=>{
-//     console.log(`this app is listening to the port ${PORT}`);
-// });
+
 const pg = require('pg');
 const client = new pg.Client(DATABASE_URL);
 client.on('error', err => { console.log('Unable to connect to database'); });
@@ -31,36 +29,27 @@ const  locationCity = request.query.city;
 const dbsql = "SELECT * FROM locations WHERE search_query=$1"
  let values = [locationCity]
  client.query(dbsql, values).then((data)=>{
-    if(data.rowCount === 0){
-      let url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&format=json&q=${locationCity}`;
-      superagent.get(url).then(res => {
-        let data = res.body[0];
-        lat = data.lat;
-        lon = data.lon;
-        let locationObject = new Location(locationCity, data.display_name,data.lat,data.lon);
-        const insertValue = 'INSERT INTO locations (search_query,formatted_query, latitude,longitude) VALUES ($1, $2 ,$3 ,$4);';
-        const newRow = [locationObject.search_query, locationObject.formatted_query ,locationObject.latitude,locationObject.longitude];
-        client.query(insertValue, newRow)
-        .then((data) => {
-          response.send(data.rows[0]);
-        });
-      })
-    } else {
-      lat = data.rows[0].latitude;
-      lon = data.rows[0].longitude;
-      response.send(data.rows[0]);
-    }
-  })
-// let url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&format=json&q=${locationCity}`;
-// superagent.get(url).then(dataResponse =>{
-//     const data=dataResponse.body[0];
-   
-//     lat = data.lat;
-//    lon = data.lon;  
-//     res.send(new Location(locationCity,data.display_name , data.lat ,data.lon));
-//     // console.log(data);
-// });
+      if (data.rowCount){
+        response.send(data.rows[0]);
+        lat = data.rows[0].latitude;
+        lon = data.rows[0].longitude;
+      }else{
+        let url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&format=json&q=${locationCity}`;
+        superagent.get(url).then(res => {
+                let data = res.body[0];
+                lat = data.lat;
+                lon = data.lon;
+                let locationObject = new Location(locationCity, data.display_name,data.lat,data.lon);
+                const insertValue = 'INSERT INTO locations (search_query,formatted_query, latitude,longitude) VALUES ($1, $2 ,$3 ,$4);';
+                const newRow = [locationObject.search_query, locationObject.formatted_query ,locationObject.latitude,locationObject.longitude];
+                client.query(insertValue, newRow)
+                .then((data) => {
+                  response.send(data.rows[0]);
+                });
+              });
+      }
 
+  })   
 }
 
 function handleWeather(req,res){
@@ -103,9 +92,6 @@ function handlePark(req,res){
       res.status(500).send('something wrong');
       })
     }
-
-
-
 
 function Location (search_query,formatted_query,latitude,longitude){
     this.search_query=search_query;
